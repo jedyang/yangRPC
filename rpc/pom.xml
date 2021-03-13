@@ -16,12 +16,15 @@
 
     <properties>
         <java.version>1.8</java.version>
+<!--        <curator.version>4.0.1</curator.version>-->
+        <curator.version>2.12.0</curator.version>
     </properties>
 
     <modules>
         <module>provider</module>
         <module>common</module>
         <module>api</module>
+        <module>registry</module>
     </modules>
 
     <dependencyManagement>
@@ -46,6 +49,31 @@
                 <artifactId>hessian</artifactId>
                 <version>4.0.38</version>
             </dependency>
+            <!-- Zookeeper -->
+            <!-- 注意zk和curator的版本对应。如果使用3.4以上版本的zk，需使用4.2以上版本的curator  -->
+            <!-- 如果使用3.4.x版本的zk，需使用4.2及以下版本的curator  -->
+            <dependency>
+                <groupId>org.apache.curator</groupId>
+                <artifactId>curator-framework</artifactId>
+                <version>${curator.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>log4j</groupId>
+                        <artifactId>log4j</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.curator</groupId>
+                <artifactId>curator-recipes</artifactId>
+                <version>${curator.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.curator</groupId>
+                <artifactId>curator-x-discovery</artifactId>
+                <version>${curator.version}</version>
+            </dependency>
+            <!-- Zookeeper end -->
         </dependencies>
     </dependencyManagement>
 
