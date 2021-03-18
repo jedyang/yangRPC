@@ -11,6 +11,7 @@ import org.apache.curator.x.discovery.ServiceInstance;
 import org.apache.curator.x.discovery.details.JsonInstanceSerializer;
 
 import javax.imageio.spi.ServiceRegistry;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -21,7 +22,7 @@ import java.util.List;
  * @author yunsheng
  */
 @Slf4j
-public class ZookeeperRegistryService implements RegistryService {
+public class ZookeeperRegistryServiceImpl implements RegistryService {
 
     private static final String registryAddr = "127.0.0.1:2181";
     private static final int BASE_SLEEP_TIME_MS = 1000;
@@ -30,7 +31,7 @@ public class ZookeeperRegistryService implements RegistryService {
 
     private final ServiceDiscovery<ServiceMeta> serviceDiscovery;
 
-    public ZookeeperRegistryService() throws Exception {
+    public ZookeeperRegistryServiceImpl() throws Exception {
         CuratorFramework client = CuratorFrameworkFactory.newClient(registryAddr, new ExponentialBackoffRetry(BASE_SLEEP_TIME_MS, MAX_RETRIES));
         client.start();
 
@@ -47,7 +48,7 @@ public class ZookeeperRegistryService implements RegistryService {
     public void register(ServiceMeta serviceMeta) throws Exception {
         ServiceInstance<ServiceMeta> serviceInstance = ServiceInstance
                 .<ServiceMeta>builder()
-                .name(buildServiceKey(serviceMeta.getServiceName(), serviceMeta.getServiceVersion()))
+                .name(RpcServiceUtil.buildServiceKey(serviceMeta))
                 .address(serviceMeta.getServiceAddr())
                 .port(serviceMeta.getServicePort())
                 .payload(serviceMeta)
@@ -56,9 +57,7 @@ public class ZookeeperRegistryService implements RegistryService {
 
     }
 
-    private String buildServiceKey(String serviceName, String serviceVersion) {
-        return String.join("#", serviceName, serviceVersion);
-    }
+
 
     @Override
     public void unRegister(ServiceMeta serviceMeta) throws Exception {
@@ -67,18 +66,17 @@ public class ZookeeperRegistryService implements RegistryService {
 
     @Override
     public ServiceMeta discovery(ServiceMeta serviceMeta) throws Exception {
-        Collection<ServiceInstance<ServiceMeta>> serviceInstances = serviceDiscovery.queryForInstances(buildServiceKey(serviceMeta.getServiceName(), serviceMeta.getServiceVersion()));
-        for (ServiceInstance<ServiceMeta> serviceInstance : serviceInstances) {
-            log.info(serviceInstance.getPayload().toString());
+        Collection<ServiceInstance<ServiceMeta>> serviceInstances = serviceDiscovery.queryForInstances(RpcServiceUtil.buildServiceKey(serviceMeta));
+        ServiceInstance<ServiceMeta> serviceInstance = new RandomLoadBalancer().selectOne((List<ServiceInstance<ServiceMeta>>) serviceInstances, null);
+        if (null != serviceInstance) {
+            return serviceInstance.getPayload();
         }
-        this.queryAll();
+
         return null;
     }
 
-    public void queryAll() throws Exception {
-        Collection<String> queryForNames = serviceDiscovery.queryForNames();
-        queryForNames.stream().forEach(str -> {
-            log.info("queryForNames:" + str);
-        });
+    @Override
+    public void destroy() throws IOException {
+        serviceDiscovery.close();
     }
 }

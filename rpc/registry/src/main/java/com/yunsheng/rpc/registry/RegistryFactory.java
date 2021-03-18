@@ -9,7 +9,7 @@ public class RegistryFactory {
                 if (null == registryService) {
                     switch (registryType) {
                         case ZOOKEEPER:
-                            registryService = new ZookeeperRegistryService();
+                            registryService = new ZookeeperRegistryServiceImpl();
                             break;
                         default:
                             // TODO

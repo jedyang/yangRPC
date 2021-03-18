@@ -1,7 +1,7 @@
 package com.yunsheng.rpc.provider.impl;
 
 import com.yunsheng.rpc.api.HelloService;
-import com.yunsheng.rpc.common.YangService;
+import com.yunsheng.rpc.common.anno.YangService;
 
 /**
  * 测试service提供者

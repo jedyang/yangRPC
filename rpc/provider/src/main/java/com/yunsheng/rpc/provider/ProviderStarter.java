@@ -1,6 +1,9 @@
 package com.yunsheng.rpc.provider;
 
-import com.yunsheng.rpc.common.YangService;
+import com.yunsheng.rpc.common.anno.YangService;
+import com.yunsheng.rpc.common.resistry.ServiceMeta;
+import com.yunsheng.rpc.registry.RegistryService;
+import com.yunsheng.rpc.registry.RpcServiceUtil;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -12,7 +15,12 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.BeanPostProcessor;
+
+import java.net.InetAddress;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 服务端启动类
@@ -28,18 +36,39 @@ import org.springframework.beans.factory.config.BeanPostProcessor;
  */
 @Slf4j
 public class ProviderStarter implements InitializingBean, BeanPostProcessor {
+
+    private String serverAddress;
+    @Value("${rpc.server.port}")
+    private int serverPort;
+    private RegistryService registryService;
+
+    public ProviderStarter(RegistryService registryService) {
+        this.registryService = registryService;
+    }
+
+    /**
+     * 本地服务实例缓存
+     */
+    private final Map<String, Object> serviceBeanMap = new HashMap<>();
+
     @Override
     public void afterPropertiesSet() {
         // 必须使用子线程启动，不能阻塞主线程
         new Thread(
                 () -> {
-                    startNettyServer();
+                    try {
+                        startNettyServer();
+                    } catch (Exception e) {
+                        log.error("startNettyServer err:", e);
+                    }
                 }
         ).start();
     }
 
-    private void startNettyServer() {
+    private void startNettyServer() throws Exception {
         log.info("====start netty server====");
+        this.serverAddress = InetAddress.getLocalHost().getHostAddress();
+
         EventLoopGroup boss = new NioEventLoopGroup();
         EventLoopGroup worker = new NioEventLoopGroup();
 
@@ -54,7 +83,7 @@ public class ProviderStarter implements InitializingBean, BeanPostProcessor {
                         }
                     }).childOption(ChannelOption.SO_KEEPALIVE, true);
 
-            ChannelFuture channelFuture = serverBootstrap.bind("127.0.0.1", 12800).sync();
+            ChannelFuture channelFuture = serverBootstrap.bind(this.serverAddress, this.serverPort).sync();
             log.info("rpc server startup success");
             channelFuture.channel().closeFuture().sync();
         } catch (Exception e) {
@@ -78,8 +107,21 @@ public class ProviderStarter implements InitializingBean, BeanPostProcessor {
         // 有YangService注解的是需要注册的服务
         YangService yangServiceAnno = bean.getClass().getAnnotation(YangService.class);
         if (null != yangServiceAnno) {
-            log.info("serviceName:{}, version: {}", yangServiceAnno.name().getSimpleName(), yangServiceAnno.version());
-            // TODO 注册
+            try {
+                log.info("serviceName:{}, version: {}", yangServiceAnno.name().getSimpleName(), yangServiceAnno.version());
+                // 注册到注册中心
+                ServiceMeta serviceMeta = new ServiceMeta();
+                serviceMeta.setServiceName(yangServiceAnno.name().getName());
+                serviceMeta.setServiceVersion(yangServiceAnno.version());
+                serviceMeta.setServiceAddr(this.serverAddress);
+                serviceMeta.setServicePort(this.serverPort);
+                registryService.register(serviceMeta);
+
+                // 本地缓存bean，处理请求时调用
+                serviceBeanMap.put(RpcServiceUtil.buildServiceKey(serviceMeta), bean);
+            } catch (Exception e) {
+                log.error("register service fail:", e);
+            }
         }
         return null;
     }

@@ -1,4 +1,4 @@
-package com.yunsheng.rpc.common;
+package com.yunsheng.rpc.common.anno;
 
 import org.springframework.stereotype.Component;
 

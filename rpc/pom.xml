@@ -22,6 +22,7 @@
 
     <modules>
         <module>provider</module>
+        <module>consumer</module>
         <module>common</module>
         <module>api</module>
         <module>registry</module>
@@ -29,6 +30,11 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>com.yunsheng.rpc</groupId>
+                <artifactId>registry</artifactId>
+                <version>${project.version}</version>
+            </dependency>
             <dependency>
                 <groupId>com.yunsheng.rpc</groupId>
                 <artifactId>common</artifactId>
@@ -74,6 +80,19 @@
                 <version>${curator.version}</version>
             </dependency>
             <!-- Zookeeper end -->
+
+            <dependency>
+                <groupId>cn.hutool</groupId>
+                <artifactId>hutool-all</artifactId>
+                <version>5.6.0</version>
+            </dependency>
+
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.12</version>
+                <scope>test</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 

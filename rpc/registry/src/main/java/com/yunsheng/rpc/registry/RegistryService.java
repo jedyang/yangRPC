@@ -2,6 +2,8 @@ package com.yunsheng.rpc.registry;
 
 import com.yunsheng.rpc.common.resistry.ServiceMeta;
 
+import java.io.IOException;
+
 /**
  * 注册服务接口
  * 统一暴露方法
@@ -30,4 +32,6 @@ public interface RegistryService {
      * @throws Exception
      */
     ServiceMeta discovery(ServiceMeta serviceMeta) throws Exception;
+
+    void destroy() throws IOException;
 }
