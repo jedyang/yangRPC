@@ -1,4 +1,4 @@
-package com.yunsheng.rpc.registry;
+package com.yunsheng.rpc.common.resistry;
 
 import com.yunsheng.rpc.common.resistry.ServiceMeta;
 

@@ -1,13 +1,23 @@
 package com.yunsheng.rpc.consumer.proxy;
 
 import com.yunsheng.rpc.common.protocol.*;
+import com.yunsheng.rpc.common.request.RpcFuture;
 import com.yunsheng.rpc.common.request.RpcRequestHolder;
 import com.yunsheng.rpc.common.serialize.SerializeTypeEnum;
+import com.yunsheng.rpc.consumer.Consumer;
 import com.yunsheng.rpc.registry.RegistryService;
+import io.netty.channel.DefaultEventLoop;
+import io.netty.util.concurrent.DefaultPromise;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.util.concurrent.TimeUnit;
 
+
+/**
+ * 代理类
+ * @author yunsheng
+ */
 public class ReferenceProxy implements InvocationHandler {
 
     private final RegistryService registryInstance;
@@ -44,8 +54,14 @@ public class ReferenceProxy implements InvocationHandler {
         requestBody.setParams(args);
         requestProtocol.setMsgBody(requestBody);
 
+        // 通过promise处理响应
+        Consumer rpcConsumer = new Consumer();
+        RpcFuture<ResponseBody> responseFuture = new RpcFuture<>(new DefaultPromise<>(new DefaultEventLoop()),timeout);
+        RpcRequestHolder.REQUEST_MAP.put(msgId, responseFuture);
+
+        rpcConsumer.sendRequest(requestProtocol, this.registryInstance);
 
 
-        return null;
+        return responseFuture.getPromise().get(responseFuture.getTimeout(), TimeUnit.MILLISECONDS).getData();
     }
 }

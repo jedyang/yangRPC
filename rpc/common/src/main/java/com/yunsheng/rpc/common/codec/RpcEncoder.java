@@ -7,15 +7,18 @@ import com.yunsheng.rpc.common.serialize.SerializeFactory;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 编码器
  * 继承MessageToByteEncoder
  * @author yunsheng
  */
+@Slf4j
 public class RpcEncoder extends MessageToByteEncoder<RpcProtocol<Object>> {
     @Override
     protected void encode(ChannelHandlerContext ctx, RpcProtocol<Object> msg, ByteBuf out) throws Exception {
+        log.info("RpcEncoder Handler");
         /**
          * 编码只要按顺序写即可
          * 注意类型

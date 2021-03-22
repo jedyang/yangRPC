@@ -13,11 +13,15 @@ import java.lang.annotation.Target;
  * @author yunsheng
  */
 
-// 每个使用的field都需要加
-@Autowired
+
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
+// 每个使用的field都需要加
+@Autowired
 public @interface YangReference {
     String version() default "1.0.0";
     long timeout() default 5000L;
 }
+
+
+

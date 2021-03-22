@@ -6,6 +6,7 @@ import com.yunsheng.rpc.common.serialize.SerializeFactory;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
@@ -14,9 +15,12 @@ import java.util.List;
  *
  * @author yunsheng
  */
+@Slf4j
 public class RpcDecoder extends ByteToMessageDecoder {
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
+        log.info("===RpcDecoder Handler===");
+
         // 数据首先必须大于头信息的长度
         if (in.readableBytes() < ProtocolConstants.HEADER_TOTAL_LEN) {
             return;

@@ -1,9 +1,12 @@
 package com.yunsheng.rpc.provider;
 
 import com.yunsheng.rpc.common.anno.YangService;
+import com.yunsheng.rpc.common.codec.RpcDecoder;
+import com.yunsheng.rpc.common.codec.RpcEncoder;
+import com.yunsheng.rpc.common.handler.RequestHandler;
 import com.yunsheng.rpc.common.resistry.ServiceMeta;
 import com.yunsheng.rpc.registry.RegistryService;
-import com.yunsheng.rpc.registry.RpcServiceUtil;
+import com.yunsheng.rpc.common.resistry.RpcServiceUtil;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -79,12 +82,16 @@ public class ProviderStarter implements InitializingBean, BeanPostProcessor {
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel ch) throws Exception {
-                            // TODO channelHandler
+                            ch.pipeline()
+                                    .addLast(new RpcEncoder())
+                                    .addLast(new RpcDecoder())
+                                    .addLast(new RequestHandler(serviceBeanMap));
                         }
-                    }).childOption(ChannelOption.SO_KEEPALIVE, true);
+                    })
+                    .childOption(ChannelOption.SO_KEEPALIVE, true);
 
             ChannelFuture channelFuture = serverBootstrap.bind(this.serverAddress, this.serverPort).sync();
-            log.info("rpc server startup success");
+            log.info("rpc server startup success at {}, on {}", this.serverAddress, this.serverPort);
             channelFuture.channel().closeFuture().sync();
         } catch (Exception e) {
             log.error("rpc server startup failed:", e);

@@ -42,11 +42,11 @@ import java.util.Map;
 @Component
 public class ConsumerStarter implements BeanFactoryPostProcessor, BeanClassLoaderAware, ApplicationContextAware {
 
-    @Value("${rpc.registry.type}")
-    private String registryType;
-
-    @Value("${rpc.registry.address}")
-    private String registryAddr;
+//    @Value("${rpc.registry.type}")
+//    private String registryType;
+//
+//    @Value("${rpc.registry.address}")
+//    private String registryAddr;
 
     private ApplicationContext applicationContext;
     private ClassLoader classLoader;
@@ -54,15 +54,25 @@ public class ConsumerStarter implements BeanFactoryPostProcessor, BeanClassLoade
     private final Map<String, BeanDefinition> referenceBeanDefs = new LinkedHashMap<>();
 
     @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
+    }
+
+    @Override
+    public void setBeanClassLoader(ClassLoader classLoader) {
+        this.classLoader = classLoader;
+    }
+
+    @Override
     public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
         String[] beanDefinitionNames = beanFactory.getBeanDefinitionNames();
         for (String beanDefinitionName : beanDefinitionNames) {
-            log.info("beanDefinitionName:" + beanDefinitionName);
+//            log.info("beanDefinitionName:" + beanDefinitionName);
             // BeanFactoryPostProcessor中对bean的操作，通过BeanDefinition进行
             BeanDefinition beanDefinition = beanFactory.getBeanDefinition(beanDefinitionName);
             String beanClassName = beanDefinition.getBeanClassName();
-            log.info("beanClassName:{}", beanClassName);
-            if (StrUtil.isNotBlank(beanClassName)) {
+//            log.info("beanClassName:{}", beanClassName);
+            if (beanClassName != null) {
                 // 通过类名称得到Class实例
                 Class<?> clazz = ClassUtils.resolveClassName(beanClassName, this.classLoader);
                 // 对类实例的每个field使用callback方法进行处理
@@ -80,10 +90,7 @@ public class ConsumerStarter implements BeanFactoryPostProcessor, BeanClassLoade
         });
     }
 
-    @Override
-    public void setBeanClassLoader(ClassLoader classLoader) {
-        this.classLoader = classLoader;
-    }
+
 
     /**
      * 处理field的回调方法
@@ -91,24 +98,23 @@ public class ConsumerStarter implements BeanFactoryPostProcessor, BeanClassLoade
      * @param field
      */
     private void filedCallback(Field field) {
-        log.info("filedCallback:{}", field.getName());
+//        log.info("filedCallback:{}", field.getName());
         YangReference annotation = AnnotationUtils.getAnnotation(field, YangReference.class);
         // 如果有YangReference注解
         if (null != annotation) {
-            BeanDefinitionBuilder beanDefinitionBuilder = BeanDefinitionBuilder.genericBeanDefinition(ReferenceBean.class);
+            log.info("YangReference Anno:{}", field.getName());
+            BeanDefinitionBuilder builder = BeanDefinitionBuilder.genericBeanDefinition(ReferenceBean.class);
             // 指定初始化方法，在这里面进行反射
-            beanDefinitionBuilder.setInitMethodName(Constants.BEAN_INIT_METHOD_NAME);
-            beanDefinitionBuilder.addPropertyValue("interfaceClass", field.getType());
-            beanDefinitionBuilder.addPropertyValue("serviceVersion", annotation.version());
-            beanDefinitionBuilder.addPropertyValue("timeout", annotation.timeout());
+//            builder.setInitMethodName(Constants.BEAN_INIT_METHOD_NAME);
+            builder.setInitMethodName("init");
+            builder.addPropertyValue("interfaceClass", field.getType());
+            builder.addPropertyValue("serviceVersion", annotation.version());
+            builder.addPropertyValue("timeout", annotation.timeout());
+            builder.addPropertyValue("registryType", "ZOOKEEPER");
+            builder.addPropertyValue("registryAddr", "127.0.0.1:2181");
 
-            AbstractBeanDefinition beanDefinition = beanDefinitionBuilder.getBeanDefinition();
+            BeanDefinition beanDefinition = builder.getBeanDefinition();
             referenceBeanDefs.put(field.getName(), beanDefinition);
         }
-    }
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        this.applicationContext = applicationContext;
     }
 }
